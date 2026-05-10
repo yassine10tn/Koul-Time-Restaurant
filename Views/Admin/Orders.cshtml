@@ -1,0 +1,49 @@
+﻿@model IEnumerable<RestaurantApp.Models.Order>
+@{
+    ViewData["Title"] = "Gestion des commandes";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">📦 Gestion des commandes</h2>
+    <a asp-action="Dashboard" class="btn btn-outline-dark btn-sm">← Dashboard</a>
+</div>
+
+<table class="table table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Client</th>
+            <th>Articles</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th>Changer statut</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var order in Model)
+        {
+            <tr>
+                <td>#@order.Id</td>
+                <td>
+                    <div class="fw-semibold">@order.CustomerName</div>
+                    <small class="text-muted">@order.CustomerPhone</small>
+                </td>
+                <td>@order.Items.Count plat(s)</td>
+                <td class="fw-bold">@order.Total.ToString("F2") €</td>
+                <td><span class="badge bg-@order.StatusColor">@order.StatusLabel</span></td>
+                <td>
+                    <form asp-action="UpdateStatus" method="post" class="d-flex gap-1">
+                        <input type="hidden" name="id" value="@order.Id" />
+                        <select name="status" class="form-select form-select-sm" style="width:auto">
+                            @foreach (RestaurantApp.Models.OrderStatus s in Enum.GetValues(typeof(RestaurantApp.Models.OrderStatus)))
+                            {
+                                <option value="@((int)s)" selected="@(order.Status == s)">@s</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-dark">OK</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

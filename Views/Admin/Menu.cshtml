@@ -1,0 +1,77 @@
+﻿@model RestaurantApp.ViewModels.AdminMenuViewModel
+@{
+    ViewData["Title"] = "Gestion du menu";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">🍽️ Gestion du menu</h2>
+    <a asp-action="Dashboard" class="btn btn-outline-dark btn-sm">← Dashboard</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>Nom</th><th>Catégorie</th><th>Prix</th><th>Dispo</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    var cat = Model.Categories.FirstOrDefault(c => c.Id == item.CategoryId);
+                    <tr>
+                        <td class="fw-semibold">@item.Name</td>
+                        <td>@(cat?.Icon) @(cat?.Name)</td>
+                        <td>@item.Price.ToString("F2") €</td>
+                        <td>
+                            <span class="badge @(item.IsAvailable ? "bg-success" : "bg-secondary")">
+                                @(item.IsAvailable ? "Disponible" : "Indispo")
+                            </span>
+                        </td>
+                        <td>
+                            <form asp-action="DeleteMenuItem" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Supprimer ce plat ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="fw-bold">Ajouter un plat</h5>
+                <form asp-action="AddMenuItem" method="post">
+                    <div class="mb-2">
+                        <input asp-for="NewItem.Name" class="form-control"
+                               placeholder="Nom du plat" required />
+                    </div>
+                    <div class="mb-2">
+                        <textarea asp-for="NewItem.Description" class="form-control"
+                                  placeholder="Description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <input asp-for="NewItem.Price" type="number" step="0.01"
+                               class="form-control" placeholder="Prix (€)" required />
+                    </div>
+                    <div class="mb-3">
+                        <select asp-for="NewItem.CategoryId" class="form-select">
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.Id">@cat.Icon @cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">
+                        <i class="bi bi-plus-circle"></i> Ajouter
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

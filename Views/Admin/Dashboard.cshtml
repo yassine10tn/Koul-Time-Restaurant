@@ -1,0 +1,328 @@
+﻿@model RestaurantApp.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard Admin";
+
+    // --- Données fictives par défaut ---
+    var topItems = new[]
+    {
+        new { Name = "Pizza Margherita", Count = 42 },
+        new { Name = "Entrecôte grillée", Count = 35 },
+        new { Name = "Poulet rôti",       Count = 28 },
+        new { Name = "Tiramisu",          Count = 21 },
+        new { Name = "Salade César",      Count = 17 },
+    };
+
+    var dailyRevenue = new[]
+    {
+        new { Date = "02/05", Total = 320m },
+        new { Date = "03/05", Total = 485m },
+        new { Date = "04/05", Total = 390m },
+        new { Date = "05/05", Total = 610m },
+        new { Date = "06/05", Total = 540m },
+        new { Date = "07/05", Total = 720m },
+    };
+
+    int totalOrders = Model.TotalOrders > 0 ? Model.TotalOrders : 47;
+    int ordersEnCours = Model.OrdersEnCours > 0 ? Model.OrdersEnCours : 8;
+    int ordersLivres = Model.OrdersLivres > 0 ? Model.OrdersLivres : 35;
+    int ordersAnnules = Model.Orders.Any()
+        ? Model.Orders.Count(o => o.Status == RestaurantApp.Models.OrderStatus.Annule)
+        : 4;
+    decimal totalRevenue = Model.TotalRevenue > 0 ? Model.TotalRevenue : 3865m;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">⚙️ Dashboard — Koul_time</h2>
+        <small class="text-muted">
+            @DateTime.Now.ToString("dddd dd MMMM yyyy",
+            new System.Globalization.CultureInfo("fr-FR"))
+        </small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Menu" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-pencil-square"></i> Gérer menu
+        </a>
+        <a asp-action="Orders" class="btn btn-dark btn-sm">
+            <i class="bi bi-list-check"></i> Commandes
+        </a>
+        <a asp-action="Users" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-people"></i> Utilisateurs
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100"
+             style="border-left:4px solid #212529 !important">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-dark d-flex align-items-center justify-content-center"
+                     style="width:52px;height:52px;font-size:1.4rem">
+                    📦
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold">@totalOrders</div>
+                    <div class="text-muted small">Total commandes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100"
+             style="border-left:4px solid #ffc107 !important">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center"
+                     style="width:52px;height:52px;font-size:1.4rem">
+                    ⏳
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold">@ordersEnCours</div>
+                    <div class="text-muted small">En cours</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100"
+             style="border-left:4px solid #198754 !important">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                     style="width:52px;height:52px;font-size:1.4rem">
+                    ✅
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold">@ordersLivres</div>
+                    <div class="text-muted small">Livrées</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100"
+             style="border-left:4px solid #0d6efd !important">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
+                     style="width:52px;height:52px;font-size:1.4rem;color:white">
+                    💰
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold">@totalRevenue.ToString("F0") DT</div>
+                    <div class="text-muted small">Chiffre d'affaires</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques -->
+<div class="row g-3 mb-4">
+    <!-- Plats les plus vendus -->
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-dark text-white fw-bold">
+                🏆 Plats les plus vendus
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="topItemsChart" style="max-height:250px"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenus par jour -->
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-dark text-white fw-bold">
+                📈 Revenus par jour
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="revenueChart" style="max-height:250px; width:100%"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Répartition statuts + Dernières commandes -->
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white fw-bold">
+                📊 Statuts des commandes
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="statusChart" style="max-height:220px"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">📋 Dernières commandes</span>
+                <a asp-action="Orders" class="btn btn-sm btn-warning">Voir tout</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Orders.Any())
+                {
+                    <!-- Fake default orders table -->
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Client</th>
+                                <th>Total</th>
+                                <th>Statut</th>
+                                <th>Heure</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-secondary">#5</span></td>
+                                <td class="fw-semibold">Yassine A.</td>
+                                <td class="fw-bold text-success">58.500 DT</td>
+                                <td><span class="badge bg-warning text-dark">En préparation</span></td>
+                                <td class="text-muted small">14:32</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-secondary">#4</span></td>
+                                <td class="fw-semibold">Adem H.</td>
+                                <td class="fw-bold text-success">34.000 DT</td>
+                                <td><span class="badge bg-success">Livré</span></td>
+                                <td class="text-muted small">13:15</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-secondary">#3</span></td>
+                                <td class="fw-semibold">Mohamed K.</td>
+                                <td class="fw-bold text-success">22.500 DT</td>
+                                <td><span class="badge bg-success">Livré</span></td>
+                                <td class="text-muted small">12:47</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-secondary">#2</span></td>
+                                <td class="fw-semibold">Sarra B.</td>
+                                <td class="fw-bold text-success">41.000 DT</td>
+                                <td><span class="badge bg-danger">Annulé</span></td>
+                                <td class="text-muted small">11:20</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-secondary">#1</span></td>
+                                <td class="fw-semibold">Ons M.</td>
+                                <td class="fw-bold text-success">19.000 DT</td>
+                                <td><span class="badge bg-success">Livré</span></td>
+                                <td class="text-muted small">10:05</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Client</th>
+                                <th>Total</th>
+                                <th>Statut</th>
+                                <th>Heure</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.Orders.Take(5))
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">#@order.Id</span></td>
+                                    <td class="fw-semibold">@order.CustomerName</td>
+                                    <td class="fw-bold text-success">@order.Total.ToString("F3") DT</td>
+                                    <td>
+                                        <span class="badge bg-@order.StatusColor">
+                                            @order.StatusLabel
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">
+                                        @order.CreatedAt.ToString("HH:mm")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const colors = ['#ffc107', '#212529', '#198754', '#0d6efd', '#dc3545', '#6f42c1'];
+
+        // 1. Plats les plus vendus (Doughnut)
+        new Chart(document.getElementById('topItemsChart'), {
+        type: 'doughnut',
+        data: {
+        labels: [@Html.Raw(string.Join(",", topItems.Select(i => $"'{i.Name}'")))],
+        datasets: [{
+        data: [@Html.Raw(string.Join(",", topItems.Select(i => i.Count)))],
+        backgroundColor: colors,
+        borderWidth: 2
+        }]
+        },
+        options: {
+        responsive: true,
+        plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 12 } } }
+        }
+        }
+        });
+
+        // 2. Revenus par jour (Line)
+        new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+        labels: [@Html.Raw(string.Join(",", dailyRevenue.Select(d => $"'{d.Date}'")))],
+        datasets: [{
+        label: 'Revenus (DT)',
+        data: [@Html.Raw(string.Join(",", dailyRevenue.Select(d => d.Total)))],
+        borderColor: '#ffc107',
+        backgroundColor: 'rgba(255,193,7,0.15)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#ffc107',
+        pointRadius: 5
+        }]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+        y: {
+        beginAtZero: true,
+        ticks: { callback: v => v + ' DT' }
+        }
+        }
+        }
+        });
+
+        // 3. Répartition statuts (Bar)
+        new Chart(document.getElementById('statusChart'), {
+        type: 'bar',
+        data: {
+        labels: ['En cours', 'Livrées', 'Annulées'],
+        datasets: [{
+        data: [@ordersEnCours, @ordersLivres, @ordersAnnules],
+        backgroundColor: ['#ffc107', '#198754', '#dc3545'],
+        borderRadius: 6
+        }]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+        }
+        });
+    </script>
+}

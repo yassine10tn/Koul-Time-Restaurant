@@ -1,0 +1,49 @@
+﻿@model IEnumerable<RestaurantApp.Models.Order>
+@{
+    ViewData["Title"] = "Mes commandes";
+}
+
+<h2 class="fw-bold mb-4">📋 Historique des commandes</h2>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-inbox" style="font-size:4rem; color:#ccc"></i>
+        <h4 class="text-muted mt-3">Aucune commande</h4>
+        <a asp-controller="Menu" asp-action="Index" class="btn btn-dark mt-3">
+            Commander maintenant
+        </a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 g-3">
+        @foreach (var order in Model)
+        {
+            <div class="col">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">Commande #@order.Id</h6>
+                            <span class="badge bg-@order.StatusColor">@order.StatusLabel</span>
+                        </div>
+                        <p class="text-muted small mb-1">
+                            <i class="bi bi-calendar3"></i>
+                            @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </p>
+                        <p class="text-muted small mb-2">
+                            @(order.DeliveryType == RestaurantApp.Models.DeliveryType.Livraison ? "🚴 Livraison" : "🏪 Pickup")
+                        </p>
+                        <div class="fw-bold text-success">@order.Total.ToString("F2") €</div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a asp-action="Track" asp-route-id="@order.Id"
+                           class="btn btn-sm btn-outline-dark">
+                            <i class="bi bi-geo-alt"></i> Suivre
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
